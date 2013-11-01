@@ -60,14 +60,34 @@ function get_page(page_url){
      *  -> was compression active ? (Content-Encoding: gzip ?)
      *  -> the Content-Type
      */
- 
-    if(error){
-      em.emit('page:error', page_url, error);
-      return;
-    }
- 
-    em.emit('page', page_url, html_str);
-  });
+    
+    /**
+     * Used to get http header informations in order to get content type or size, etc
+     * using https://npmjs.org/package/xmlhttprequest
+     */
+     
+    var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
+	var req = new XMLHttpRequest();
+	req.open('GET', page_url , true);
+  	req.send();
+  	req.onreadystatechange = function() {
+	var CT ="";
+	var CL ="";
+	var CLG="";
+	var CE ="";
+		if (this.readyState == 4) {
+			CT=req.getResponseHeader("Content-Type");
+			CL=req.getResponseHeader("Content-Length");
+			CLG=req.getResponseHeader("Content-Language");
+			CE=req.getResponseHeader("Content-Encoding");
+			em.emit('page', page_url, html_str, CT, CL, CLG, CE);
+			if(error){
+      				em.emit('page:error', page_url, error);
+      			return;
+   			}
+		}
+	}; 
+});
 }
  
 /**
@@ -85,9 +105,8 @@ function extract_links(page_url, html_str){
     // Here you could improve the code in order to:
     // - check if we already crawled this url
     // - ...
-    em.emit('url', page_url, html_str, url);
-  });
- 
+		em.emit('url', page_url, html_str, url);
+	});
 }
  
 function handle_new_url(from_page_url, from_page_str, url){
@@ -105,8 +124,8 @@ em.on('page:scraping', function(page_url){
 });
  
 // Listen to events, see: http://nodejs.org/api/all.html#all_emitter_on_event_listener
-em.on('page', function(page_url, html_str){
-  console.log('We got a new page!', page_url);
+em.on('page', function(page_url, html_str, CT, CL, CLG, CE){
+  console.log('***We got a new page!***\n-Content-Type:'+CT+'\n-Content-Length:'+CL+'\n-Content-Language:'+CLG+'\n-Content-Encoding:'+CE+'\n-URL:', page_url);
 });
  
 em.on('page:error', function(page_url, error){
@@ -116,7 +135,7 @@ em.on('page:error', function(page_url, error){
 em.on('page', extract_links);
  
 em.on('url', function(page_url, html_str, url){
-  console.log('We got a link! ', url);
+  console.log('We got a link! -URL:'+url);
 });
  
 em.on('url', handle_new_url);
