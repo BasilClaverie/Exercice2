@@ -1,12 +1,10 @@
-var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
-var req = new XMLHttpRequest();
-
-req.open('GET', 'http://google.com', true);
-req.send();
-req.onreadystatechange = function() {
-	var CT ="";
-	if (this.readyState == 4) {
-		CT=req.getResponseHeader("Content-Encoding");
-		console.log(CT);
-	}
-};
+//load the Client interface
+var MongoClient = require('mongodb').MongoClient;
+// the client db connection scope is wrapped in a callback:
+MongoClient.connect('mongodb://'+connection_string, function(err, db) {
+  if(err) throw err;
+  var collection = db.collection('books').find().limit(10).toArray(function(err, docs) {
+    console.dir(docs);
+    db.close();
+  })
+})
