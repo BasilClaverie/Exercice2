@@ -1,10 +1,24 @@
-//load the Client interface
-var MongoClient = require('mongodb').MongoClient;
-// the client db connection scope is wrapped in a callback:
-MongoClient.connect('mongodb://'+connection_string, function(err, db) {
-  if(err) throw err;
-  var collection = db.collection('books').find().limit(10).toArray(function(err, docs) {
-    console.dir(docs);
-    db.close();
-  })
-})
+var mongoose = require('mongoose');
+
+mongoose.connect('mongodb://localhost/blog', function(err) {
+  if (err) { throw err; }
+});
+
+
+var newUrlSchema = new mongoose.Schema({
+  url : String,
+  date : { type : Date, default : Date.now }
+});
+
+
+var newUrlModel = mongoose.model('url', newUrlSchema);
+
+var myNewUrl = newUrlModel();
+myNewUrl.url='http://toplel.com';
+
+myNewUrl.save(function (err) {
+  if (err) { throw err; }
+  console.log('URL ajoutée avec succès !');
+  mongoose.connection.close();
+});
+

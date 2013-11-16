@@ -15,10 +15,23 @@ var request         = require('request');
 // See: http://expressjs.com/guide.html
 var express         = require('express');
 var app             = express();
+
+//Used to color the console in order to read it easily
 var colors          = require('colors');
  
 // You should (okay: could) use your OWN implementation here!
 var EventEmitter    = require('events').EventEmitter;
+
+//Used to communicate with mongodb
+var mongoose        = require('mongoose');
+mongoose.connect('mongodb://localhost/annuaire', function(err) {
+  if (err) { throw err; }
+});
+var newUrlSchema    = new mongoose.Schema({
+  url : String,
+  date : { type : Date, default : Date.now }
+});
+var newUrlModel     = mongoose.model('url', newUrlSchema);
  
 // We create a global EventEmitter (Mediator pattern: http://en.wikipedia.org/wiki/Mediator_pattern )
 var em              = new EventEmitter();
@@ -31,7 +44,7 @@ var em              = new EventEmitter();
  * // It may be a good idea to encapsulate queue inside its own class/module and require it with:
  * var queue = require('./queue');
  */
-var queue        = [];
+var queue           = [];
  
 /**
  * Get the page from `page_url`
@@ -68,26 +81,26 @@ function get_page(page_url){
      */
      
     var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
-        var req = new XMLHttpRequest();
-        req.open('GET', page_url , true);
-          req.send();
-          req.onreadystatechange = function() {
-        var CT ="";
-        var CL ="";
-        var CLG="";
-        var CE ="";
-                if (this.readyState == 4) {
-                        CT=req.getResponseHeader("Content-Type");
-                        CL=req.getResponseHeader("Content-Length");
-                        CLG=req.getResponseHeader("Content-Language");
-                        CE=req.getResponseHeader("Content-Encoding");
-                        em.emit('page', page_url, html_str, CT, CL, CLG, CE);
-                        if(error){
-                                      em.emit('page:error', page_url, error);
-                              return;
-                           }
-                }
-        }; 
+    var req = new XMLHttpRequest();
+    req.open('GET', page_url , true);
+    req.send();
+    req.onreadystatechange = function() {
+      var CT ="";
+      var CL ="";
+      var CLG="";
+      var CE ="";
+      if (this.readyState == 4) {
+        CT=req.getResponseHeader("Content-Type");
+        CL=req.getResponseHeader("Content-Length");
+        CLG=req.getResponseHeader("Content-Language");
+        CE=req.getResponseHeader("Content-Encoding");
+        em.emit('page', page_url, html_str, CT, CL, CLG, CE);
+        if(error){
+          em.emit('page:error', page_url, error);
+          return;
+        }
+      }
+    }; 
 });
 }
  
@@ -106,8 +119,16 @@ function extract_links(page_url, html_str){
     // Here you could improve the code in order to:
     // - check if we already crawled this url
     // - ...
-                em.emit('url', page_url, html_str, url);
-        });
+    em.emit('url', page_url, html_str, url);
+    
+    var myNewUrl = newUrlModel();
+    myNewUrl.url=url;
+    myNewUrl.save(function (err) {
+      if (err) { throw err; }
+      console.log('URL successfully added to our DB');
+      mongoose.connection.close();
+    });
+  });
 }
  
 function handle_new_url(from_page_url, from_page_str, url){
