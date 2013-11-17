@@ -22,7 +22,7 @@ var colors          = require('colors');
 // You should (okay: could) use your OWN implementation here!
 var EventEmitter    = require('events').EventEmitter;
 
-//Used to communicate with mongodb
+/*Used to communicate with mongodb (Tutorial used : http://www.atinux.fr/2011/10/15/tutoriel-sur-mongoose-mongodb-avec-node-js/ )*/
 var mongoose        = require('mongoose');
 mongoose.connect('mongodb://localhost/annuaire', function(err) {
   if (err) { throw err; }
